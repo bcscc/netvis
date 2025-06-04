@@ -10,7 +10,7 @@ export const NetworkDefaults = {
     threshold: 0.1,
     maxNodes: 75,
     includeIsolated: false,
-    topN: 8
+    topN: 12
   },
 
   // Physics simulation defaults
@@ -34,7 +34,7 @@ export const NetworkDefaults = {
   ranges: {
     threshold: { min: 0.1, max: 1.0, step: 0.1 },
     maxNodes: { min: 10, max: 100, step: 10 },
-    topN: { min: 6, max: 20, step: 1 },
+    topN: { min: 6, max: 15, step: 1 },
     physics: {
       chargeStrength: { min: -300, max: -50, step: 10 },
       linkStrength: { min: 0.1, max: 1.0, step: 0.05 },
@@ -74,10 +74,23 @@ export const NetworkDefaults = {
     }
   },
 
-  // Color palette for groups
+  // Color palette for groups - 15 distinct, well-differentiated colors
   colors: [
-    '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E',
-    '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1'
+    '#EF4444', // Red
+    '#F97316', // Orange  
+    '#F59E0B', // Amber
+    '#EAB308', // Yellow
+    '#84CC16', // Lime
+    '#22C55E', // Green
+    '#10B981', // Emerald
+    '#14B8A6', // Teal
+    '#06B6D4', // Cyan
+    '#0EA5E9', // Sky
+    '#3B82F6', // Blue
+    '#6366F1', // Indigo
+    '#8B5CF6', // Violet
+    '#A855F7', // Purple
+    '#EC4899'  // Pink
   ],
 
   // Default gray color for "others" category

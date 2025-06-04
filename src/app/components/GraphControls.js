@@ -344,14 +344,21 @@ const GraphControls = ({
               ) : metadata ? (
                 <>
                   <div className="text-gray-700">
-                    <span className="font-medium">{metadata.totalPeople}</span> nodes
+                    <span className="font-medium">{metadata.totalPeople}</span> people
                   </div>
+                  {metadata.totalGroups && (
+                    <div className="text-gray-700">
+                      <span className="font-medium">{metadata.totalGroups}</span> groups
+                    </div>
+                  )}
                   <div className="text-gray-700">
                     <span className="font-medium">{metadata.totalConnections}</span> links
                   </div>
-                  <div className="text-gray-500">
-                    {metadata.averageConnections?.toFixed(1)} avg connections
-                  </div>
+                  {metadata.isolatedPeople > 0 && (
+                    <div className="text-gray-500">
+                      {metadata.isolatedPeople} isolated
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-gray-500">Ready to generate</div>
@@ -369,7 +376,8 @@ const GraphControls = ({
           </span>
           {metadata && !isLoading && (
             <span>
-              {metadata.totalPeople} nodes • {metadata.totalConnections} links • {((metadata.totalConnections / metadata.totalPeople) * 100).toFixed(0)}% connectivity
+              {metadata.totalPeople} people • {metadata.totalGroups || 0} groups • {metadata.totalConnections} links
+              {metadata.isolatedPeople > 0 && ` • ${metadata.isolatedPeople} isolated`}
             </span>
           )}
         </div>

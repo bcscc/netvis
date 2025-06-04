@@ -59,9 +59,9 @@ const GraphControls = ({
   };
 
   return (
-    <div className="bg-white border rounded-lg shadow-sm p-4">
+    <div className="bg-white border rounded-lg shadow-lg p-4">
       {/* Main Controls Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         {/* Connection Type */}
         <div className="space-y-2">
@@ -90,23 +90,28 @@ const GraphControls = ({
           </div>
         </div>
 
-        {/* Node Settings */}
+        {/* Display Options */}
         <div className="space-y-1">
           <div className="space-y-1">
-            <label className="text-xs text-gray-600">Max Nodes</label>
-            <input
-              type="range"
-              min={NetworkDefaults.ranges.maxNodes.min}
-              max={NetworkDefaults.ranges.maxNodes.max}
-              step={NetworkDefaults.ranges.maxNodes.step}
-              value={localMaxNodes}
-              onChange={(e) => handleMaxNodesChange(e.target.value)}
-              onMouseUp={() => applyMaxNodesChange()}
-              onTouchEnd={() => applyMaxNodesChange()}
-              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-              disabled={isLoading}
-            />
-            <div className="text-xs text-gray-500 text-center">{localMaxNodes}</div>
+            <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
+                Node Settings
+            </label>
+            <div>
+                <label className="text-xs text-gray-600">Max Nodes</label>
+                <input
+                type="range"
+                min={NetworkDefaults.ranges.maxNodes.min}
+                max={NetworkDefaults.ranges.maxNodes.max}
+                step={NetworkDefaults.ranges.maxNodes.step}
+                value={localMaxNodes}
+                onChange={(e) => handleMaxNodesChange(e.target.value)}
+                onMouseUp={() => applyMaxNodesChange()}
+                onTouchEnd={() => applyMaxNodesChange()}
+                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                disabled={isLoading}
+                />
+                <div className="text-xs text-gray-500 text-center">{localMaxNodes}</div>
+            </div>
           </div>
 
           <div className="space-y-1">
@@ -124,49 +129,27 @@ const GraphControls = ({
             />
             <div className="text-xs text-gray-500 text-center">{settings.topN || NetworkDefaults.network.topN}</div>
           </div>
-        </div>
 
-        {/* Display Options */}
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
-            Display
-          </label>
-          <div className="space-y-1.5">
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={settings.includeIsolated || false}
-                onChange={(e) => handleChange('includeIsolated', e.target.checked)}
-                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <span className="text-xs text-gray-700">Isolated nodes</span>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
+                Display Options
             </label>
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={settings.showLabels !== false}
-                onChange={(e) => handleChange('showLabels', e.target.checked)}
-                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <span className="text-xs text-gray-700">Node labels</span>
-            </label>
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={settings.enablePhysics !== false}
-                onChange={(e) => handleChange('enablePhysics', e.target.checked)}
-                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <span className="text-xs text-gray-700">Physics sim</span>
-            </label>
+            <div className="space-y-1.5 flex justify-between">
+                <label className="flex items-center space-x-2 text-sm">
+                <input
+                    type="checkbox"
+                    checked={settings.includeIsolated || false}
+                    onChange={(e) => handleChange('includeIsolated', e.target.checked)}
+                    className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-1 focus:ring-blue-500"
+                    disabled={isLoading}
+                />
+                <span className="text-xs text-gray-700">Isolated nodes</span>
+                </label>
+            </div>
           </div>
         </div>
 
         {/* Physics Controls */}
-        {settings.enablePhysics !== false ? (
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
@@ -294,47 +277,11 @@ const GraphControls = ({
               </div>
             </div>
           </div>
-        ) : (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
-              Network Status
-            </label>
-            <div className="space-y-1 text-xs">
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 animate-spin rounded-full border border-blue-500 border-t-transparent"></div>
-                  <span className="text-gray-600">Generating...</span>
-                </div>
-              ) : metadata ? (
-                <>
-                  <div className="text-gray-700">
-                    <span className="font-medium">{metadata.totalPeople}</span> people
-                  </div>
-                  {metadata.totalGroups && (
-                    <div className="text-gray-700">
-                      <span className="font-medium">{metadata.totalGroups}</span> groups
-                    </div>
-                  )}
-                  <div className="text-gray-700">
-                    <span className="font-medium">{metadata.totalConnections}</span> links
-                  </div>
-                  {metadata.isolatedPeople > 0 && (
-                    <div className="text-gray-500">
-                      {metadata.isolatedPeople} isolated
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-gray-500">Ready to generate</div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Quick Help Text */}
       <div className="mt-3 pt-3 border-t border-gray-100">
-        <div className="text-xs text-gray-500 flex items-center justify-between">
+        <div className="text-xs text-gray-600 flex items-center justify-between">
           <span>
             💡 {ConnectionConfig[settings.connectionType || ConnectionTypes.COMPANY]?.description}
           </span>

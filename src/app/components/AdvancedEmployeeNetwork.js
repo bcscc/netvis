@@ -20,7 +20,7 @@ const NodeDetailsOverlay = ({ node, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-lg">
+        <div className="bg-gradient-to-r from-yellow-700 to-yellow-300 text-white p-6 rounded-t-lg">
           <div className="flex justify-between items-start">
             <div className="flex-1">
               <div className="flex items-center gap-3">
@@ -65,7 +65,7 @@ const NodeDetailsOverlay = ({ node, onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors ml-4"
+              className="text-gray-400 hover:text-gray-500 transition-colors ml-4"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -202,7 +202,7 @@ const NodeDetailsOverlay = ({ node, onClose }) => {
         <div className="bg-gray-50 px-6 py-4 rounded-b-lg">
           <button
             onClick={onClose}
-            className="w-full bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors"
+            className="w-full bg-gray-400 text-white py-2 px-4 rounded-md hover:bg-gray-500 transition-colors"
           >
             Close
           </button>
@@ -398,7 +398,6 @@ const AdvancedEmployeeNetwork = ({ people: propPeople = [] }) => {
           nodes={networkData.nodes}
           links={networkData.links}
           colorLegend={networkData.legendData}
-          description={`Network showing ${settings.connectionType} connections`}
           physicsParams={settings.physicsParams}
         />
       )}

@@ -74,10 +74,8 @@ export const NetworkDefaults = {
 
   // Color palette for groups - 15 distinct, well-differentiated colors
   colors: [
-    '#800000', // Maroon
-    '#9A6324', // Brown  
+
     '#469990', // Teal
-    '#000075', // Navy
     '#e6194B', // Red
     '#f58231', // Orange
     '#ffe119', // Yellow
@@ -88,7 +86,10 @@ export const NetworkDefaults = {
     '#fabed4', // Pink
     '#fffac8', // Beige
     '#aaffc3', // Mint
-    '#dcbeff'  // Lavender
+    '#dcbeff', // Lavender    
+    '#800000', // Maroon
+    '#9A6324', // Brown      
+    '#000075' // Navy
   ],
 
   // Default gray color for "others" category
@@ -99,7 +100,7 @@ export const NetworkDefaults = {
     baseSize: 8,
     connectionMultiplier: 4,
     minSize: 6,
-    maxSize: 30
+    maxSize: 35
   }
 };
 

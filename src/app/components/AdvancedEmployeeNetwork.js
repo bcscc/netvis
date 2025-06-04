@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import ForceDirectedGraph from './ForceDirectedGraph';
 import GraphControls from './GraphControls';
 import NetworkGenerator from '../algorithms/NetworkGenerator';
-import { ConnectionTypes, NodeGroupings } from '../algorithms/ConnectionTypes';
+import { ConnectionTypes } from '../algorithms/ConnectionTypes';
+import NetworkDefaults from '../config/defaults';
 
 // Custom overlay component for node details
 const NodeDetailsOverlay = ({ node, onClose }) => {
@@ -192,11 +193,8 @@ const AdvancedEmployeeNetwork = ({ people: propPeople = [] }) => {
 
   // Default settings
   const [settings, setSettings] = useState({
-    connectionType: ConnectionTypes.COMPANY,
-    nodeGrouping: NodeGroupings.CURRENT_COMPANY,
-    threshold: 0.1,
-    maxNodes: 100,
-    includeIsolated: false
+    ...NetworkDefaults.network,
+    ...NetworkDefaults.ui
   });
 
   // Load employee data on component mount
@@ -362,7 +360,7 @@ const AdvancedEmployeeNetwork = ({ people: propPeople = [] }) => {
           nodes={networkData.nodes}
           links={networkData.links}
           colorLegend={networkData.legendData}
-          description={`Network showing ${settings.connectionType} connections grouped by ${settings.nodeGrouping.replace('_', ' ').toLowerCase()}`}
+          description={`Network showing ${settings.connectionType} connections`}
           physicsParams={settings.physicsParams}
         />
       )}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ConnectionTypes, ConnectionConfig, NodeGroupings, GroupingConfig } from '../algorithms/ConnectionTypes';
+import { ConnectionTypes, ConnectionConfig } from '../algorithms/ConnectionTypes';
+import NetworkDefaults from '../config/defaults';
 
 const GraphControls = ({ 
   onChange, 
@@ -9,24 +10,19 @@ const GraphControls = ({
   isLoading = false,
   metadata = null 
 }) => {
-  const [localThreshold, setLocalThreshold] = useState(settings.threshold || 0.1);
-  const [localMaxNodes, setLocalMaxNodes] = useState(settings.maxNodes || 100);
+  const [localThreshold, setLocalThreshold] = useState(settings.threshold || NetworkDefaults.network.threshold);
+  const [localMaxNodes, setLocalMaxNodes] = useState(settings.maxNodes || NetworkDefaults.network.maxNodes);
   const [showPhysicsControls, setShowPhysicsControls] = useState(false);
 
   // Physics parameters with defaults
   const [physicsParams, setPhysicsParams] = useState({
-    chargeStrength: settings.physicsParams?.chargeStrength || -120,
-    linkStrength: settings.physicsParams?.linkStrength || 0.3,
-    linkDistance: settings.physicsParams?.linkDistance || 80,
-    collisionRadius: settings.physicsParams?.collisionRadius || 1.2,
-    velocityDecay: settings.physicsParams?.velocityDecay || 0.9,
-    alphaDecay: settings.physicsParams?.alphaDecay || 0.03,
-    centeringStrength: settings.physicsParams?.centeringStrength || 0.05
+    ...NetworkDefaults.physics,
+    ...settings.physicsParams
   });
 
   useEffect(() => {
-    setLocalThreshold(settings.threshold || 0.1);
-    setLocalMaxNodes(settings.maxNodes || 100);
+    setLocalThreshold(settings.threshold || NetworkDefaults.network.threshold);
+    setLocalMaxNodes(settings.maxNodes || NetworkDefaults.network.maxNodes);
     if (settings.physicsParams) {
       setPhysicsParams(prev => ({ ...prev, ...settings.physicsParams }));
     }
@@ -55,32 +51,26 @@ const GraphControls = ({
   // Apply changes when user finishes editing
   const applyThresholdChange = () => {
     const value = parseFloat(localThreshold);
-    if (!isNaN(value) && value >= 0.1 && value <= 1.0) {
+    const { min, max } = NetworkDefaults.ranges.threshold;
+    if (!isNaN(value) && value >= min && value <= max) {
       handleChange('threshold', value);
     } else {
-      setLocalThreshold(settings.threshold || 0.1);
+      setLocalThreshold(NetworkDefaults.network.threshold);
     }
   };
 
   const applyMaxNodesChange = () => {
     const value = parseInt(localMaxNodes);
-    if (!isNaN(value) && value >= 10 && value <= 100) {
+    const { min, max } = NetworkDefaults.ranges.maxNodes;
+    if (!isNaN(value) && value >= min && value <= max) {
       handleChange('maxNodes', value);
     } else {
-      setLocalMaxNodes(settings.maxNodes || 100);
+      setLocalMaxNodes(NetworkDefaults.network.maxNodes);
     }
   };
 
   const resetPhysicsToDefault = () => {
-    const defaultParams = {
-      chargeStrength: -120,
-      linkStrength: 0.3,
-      linkDistance: 80,
-      collisionRadius: 1.2,
-      velocityDecay: 0.9,
-      alphaDecay: 0.03,
-      centeringStrength: 0.05
-    };
+    const defaultParams = NetworkDefaults.physics;
     setPhysicsParams(defaultParams);
     handleChange('physicsParams', defaultParams);
   };
@@ -118,61 +108,58 @@ const GraphControls = ({
         </div>
 
         {/* Node Grouping & Settings */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
-              Group By
-            </label>
-            <select
-              value={settings.nodeGrouping || NodeGroupings.CURRENT_COMPANY}
-              onChange={(e) => handleChange('nodeGrouping', e.target.value)}
-              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              disabled={isLoading}
-            >
-              {Object.entries(GroupingConfig).map(([grouping, config]) => (
-                <option key={grouping} value={grouping}>
-                  {config.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Threshold & Max Nodes in compact row */}
-          <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          {/* Threshold, Max Nodes, and Top Groups in compact grid */}
             <div className="space-y-1">
-              <label className="text-xs text-gray-600">Strength</label>
-              <input
+                <label className="text-xs text-gray-600">Strength</label>
+                <input
                 type="range"
-                min="0.1"
-                max="1.0"
-                step="0.1"
+                min={NetworkDefaults.ranges.threshold.min}
+                max={NetworkDefaults.ranges.threshold.max}
+                step={NetworkDefaults.ranges.threshold.step}
                 value={localThreshold}
                 onChange={(e) => handleThresholdChange(e.target.value)}
                 onMouseUp={() => applyThresholdChange()}
                 onTouchEnd={() => applyThresholdChange()}
                 className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 disabled={isLoading}
-              />
-              <div className="text-xs text-gray-500 text-center">{localThreshold}</div>
+                />
+                <div className="text-xs text-gray-500 text-center">{localThreshold}</div>
             </div>
             
             <div className="space-y-1">
-              <label className="text-xs text-gray-600">Max Nodes</label>
-              <input
+                <label className="text-xs text-gray-600">Max Nodes</label>
+                <input
                 type="range"
-                min="10"
-                max="100"
-                step="10"
+                min={NetworkDefaults.ranges.maxNodes.min}
+                max={NetworkDefaults.ranges.maxNodes.max}
+                step={NetworkDefaults.ranges.maxNodes.step}
                 value={localMaxNodes}
                 onChange={(e) => handleMaxNodesChange(e.target.value)}
                 onMouseUp={() => applyMaxNodesChange()}
                 onTouchEnd={() => applyMaxNodesChange()}
                 className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 disabled={isLoading}
-              />
-              <div className="text-xs text-gray-500 text-center">{localMaxNodes}</div>
+                />
+                <div className="text-xs text-gray-500 text-center">{localMaxNodes}</div>
             </div>
-          </div>
+
+            <div className="space-y-1">
+                <label className="text-xs text-gray-600">Top Groups</label>
+                <input
+                type="range"
+                min={NetworkDefaults.ranges.topN.min}
+                max={NetworkDefaults.ranges.topN.max}
+                step={NetworkDefaults.ranges.topN.step}
+                value={settings.topN || NetworkDefaults.network.topN}
+                onChange={(e) => handleChange('topN', parseInt(e.target.value))}
+                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                disabled={isLoading}
+                title="Number of top groups to show with distinct colors"
+                />
+                <div className="text-xs text-gray-500 text-center">{settings.topN || NetworkDefaults.network.topN}</div>
+            </div>
+          
         </div>
 
         {/* Display Options */}
@@ -216,7 +203,7 @@ const GraphControls = ({
 
         {/* Physics Controls */}
         {settings.enablePhysics !== false ? (
-          <div className="space-y-2">
+          <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-gray-700 uppercase tracking-wide">
                 Physics Controls
@@ -238,9 +225,9 @@ const GraphControls = ({
                   <label className="text-xs text-gray-600">Repulsion</label>
                   <input
                     type="range"
-                    min="-300"
-                    max="-50"
-                    step="10"
+                    min={NetworkDefaults.ranges.physics.chargeStrength.min}
+                    max={NetworkDefaults.ranges.physics.chargeStrength.max}
+                    step={NetworkDefaults.ranges.physics.chargeStrength.step}
                     value={physicsParams.chargeStrength}
                     onChange={(e) => handlePhysicsChange('chargeStrength', e.target.value)}
                     className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -254,9 +241,9 @@ const GraphControls = ({
                   <label className="text-xs text-gray-600">Link Force</label>
                   <input
                     type="range"
-                    min="0.1"
-                    max="1.0"
-                    step="0.05"
+                    min={NetworkDefaults.ranges.physics.linkStrength.min}
+                    max={NetworkDefaults.ranges.physics.linkStrength.max}
+                    step={NetworkDefaults.ranges.physics.linkStrength.step}
                     value={physicsParams.linkStrength}
                     onChange={(e) => handlePhysicsChange('linkStrength', e.target.value)}
                     className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -273,9 +260,9 @@ const GraphControls = ({
                   <label className="text-xs text-gray-600">Distance</label>
                   <input
                     type="range"
-                    min="30"
-                    max="150"
-                    step="5"
+                    min={NetworkDefaults.ranges.physics.linkDistance.min}
+                    max={NetworkDefaults.ranges.physics.linkDistance.max}
+                    step={NetworkDefaults.ranges.physics.linkDistance.step}
                     value={physicsParams.linkDistance}
                     onChange={(e) => handlePhysicsChange('linkDistance', e.target.value)}
                     className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -289,9 +276,9 @@ const GraphControls = ({
                   <label className="text-xs text-gray-600">Damping</label>
                   <input
                     type="range"
-                    min="0.7"
-                    max="0.95"
-                    step="0.01"
+                    min={NetworkDefaults.ranges.physics.velocityDecay.min}
+                    max={NetworkDefaults.ranges.physics.velocityDecay.max}
+                    step={NetworkDefaults.ranges.physics.velocityDecay.step}
                     value={physicsParams.velocityDecay}
                     onChange={(e) => handlePhysicsChange('velocityDecay', e.target.value)}
                     className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
@@ -306,15 +293,7 @@ const GraphControls = ({
               <div className="grid grid-cols-3 gap-1 pt-1">
                 <button
                   onClick={() => {
-                    const tightParams = {
-                      chargeStrength: -80,
-                      linkStrength: 0.6,
-                      linkDistance: 50,
-                      collisionRadius: 1.1,
-                      velocityDecay: 0.9,
-                      alphaDecay: 0.03,
-                      centeringStrength: 0.1
-                    };
+                    const tightParams = NetworkDefaults.physicsPresets.tight;
                     setPhysicsParams(tightParams);
                     handleChange('physicsParams', tightParams);
                   }}
@@ -326,15 +305,7 @@ const GraphControls = ({
                 </button>
                 <button
                   onClick={() => {
-                    const spreadParams = {
-                      chargeStrength: -200,
-                      linkStrength: 0.2,
-                      linkDistance: 120,
-                      collisionRadius: 1.5,
-                      velocityDecay: 0.85,
-                      alphaDecay: 0.02,
-                      centeringStrength: 0.02
-                    };
+                    const spreadParams = NetworkDefaults.physicsPresets.spread;
                     setPhysicsParams(spreadParams);
                     handleChange('physicsParams', spreadParams);
                   }}
@@ -346,15 +317,7 @@ const GraphControls = ({
                 </button>
                 <button
                   onClick={() => {
-                    const floatyParams = {
-                      chargeStrength: -100,
-                      linkStrength: 0.1,
-                      linkDistance: 100,
-                      collisionRadius: 2.0,
-                      velocityDecay: 0.7,
-                      alphaDecay: 0.01,
-                      centeringStrength: 0.01
-                    };
+                    const floatyParams = NetworkDefaults.physicsPresets.floaty;
                     setPhysicsParams(floatyParams);
                     handleChange('physicsParams', floatyParams);
                   }}

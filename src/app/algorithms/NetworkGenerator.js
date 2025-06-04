@@ -1,4 +1,5 @@
-import { ConnectionTypes, ConnectionConfig, NodeGroupings, GroupingConfig } from './ConnectionTypes.js';
+import { ConnectionTypes, ConnectionConfig } from './ConnectionTypes.js';
+import NetworkDefaults from '../config/defaults.js';
 
 /**
  * Network Generator - Creates nodes and links for network visualization
@@ -23,14 +24,14 @@ class NetworkGenerator {
    */
   generateNetwork(options = {}) {
     const {
-      connectionType = ConnectionTypes.COMPANY,
-      nodeGrouping = NodeGroupings.CURRENT_COMPANY,
-      threshold = 0.3,
-      maxNodes = 50,
-      includeIsolated = false
+      connectionType = NetworkDefaults.network.connectionType,
+      threshold = NetworkDefaults.network.threshold,
+      maxNodes = NetworkDefaults.network.maxNodes,
+      includeIsolated = NetworkDefaults.network.includeIsolated,
+      topN = NetworkDefaults.network.topN
     } = options;
 
-    console.log(`Generating network: ${connectionType}, ${nodeGrouping}, threshold: ${threshold}`);
+    console.log(`Generating network: ${connectionType}, threshold: ${threshold}, topN: ${topN}`);
 
     // Get subset of people to visualize
     const selectedPeople = this.selectPeople(maxNodes);
@@ -43,17 +44,17 @@ class NetworkGenerator {
       selectedPeople : 
       this.filterConnectedPeople(selectedPeople, connections);
 
-    // Generate color mappings for grouping - pass connectionType for education-based multi-coloring
-    const groupColors = this.getGroupColors(filteredPeople, nodeGrouping, connectionType);
+    // Generate color mappings for the connection type - use top N logic for all types
+    const groupColors = this.getGroupColors(filteredPeople, connectionType, topN);
     
-    // Generate nodes - pass connectionType for education-based multi-coloring
-    const nodes = this.generateNodes(filteredPeople, nodeGrouping, groupColors, connectionType);
+    // Generate nodes - grouping is determined by connection type
+    const nodes = this.generateNodes(filteredPeople, groupColors, connectionType, topN, connections);
     
     // Generate links
     const links = this.generateLinks(connections, connectionType);
 
     // Generate legend data
-    const legendData = this.generateLegendData(filteredPeople, nodeGrouping, groupColors);
+    const legendData = this.generateLegendData(filteredPeople, groupColors, connectionType);
 
     return {
       nodes,
@@ -61,8 +62,8 @@ class NetworkGenerator {
       legendData,
       metadata: {
         connectionType,
-        nodeGrouping,
         threshold,
+        topN,
         totalPeople: filteredPeople.length,
         totalConnections: connections.length,
         averageConnections: connections.length / filteredPeople.length
@@ -142,8 +143,8 @@ class NetworkGenerator {
         const person1 = people[i];
         const person2 = people[j];
 
-        const sharedSchools = person1.getSchoolNames().filter(school => 
-          person2.getSchoolNames().includes(school)
+        const sharedSchools = this.getPersonEducationSchools(person1).filter(schoolId => 
+          this.getPersonEducationSchools(person2).includes(schoolId)
         );
 
         if (sharedSchools.length > 0) {
@@ -332,70 +333,73 @@ class NetworkGenerator {
   /**
    * Generate nodes for visualization
    */
-  generateNodes(people, grouping, groupColors, connectionType) {
-    // For education connections, we need to handle multi-colored nodes
-    if (connectionType === ConnectionTypes.EDUCATION) {
-      // Get top 12 schools once for all people
-      const top12Schools = this.getTopSchools(people, 12);
-      
-      return people.map(person => {
-        const groupInfo = this.getPersonGroup(person, grouping);
-        
-        // Get all schools for this person that are in the top 12
-        const personSchools = this.getPersonEducationSchools(person);
-        const personTop12Schools = personSchools.filter(school => 
-          top12Schools.some(topSchool => topSchool.key === school)
-        );
-        
-        // Create multi-color information
-        let nodeColor;
-        let multiColors = null;
-        
-        if (personTop12Schools.length === 0) {
-          // No top 12 schools - use gray
-          nodeColor = '#9CA3AF';
-        } else if (personTop12Schools.length === 1) {
-          // Single top 12 school - use its color
-          nodeColor = groupColors.get(personTop12Schools[0]) || '#9CA3AF';
-        } else {
-          // Multiple top 12 schools - create multi-colored node
-          multiColors = personTop12Schools.map(school => 
-            groupColors.get(school) || '#9CA3AF'
-          );
-          nodeColor = multiColors[0]; // Primary color for fallback
-        }
-        
-        return {
-          id: person.id,
-          label: person.firstName || person.name.split(' ')[0],
-          fullName: person.name,
-          size: this.calculateNodeSize(person),
-          color: nodeColor,
-          multiColors: multiColors, // Array of colors for multi-colored rendering
-          group: groupInfo.key,
-          groupLabel: groupInfo.label,
-          person: person, // Reference to full person object
-          onClick: (node) => this.handleNodeClick(node)
-        };
-      });
-    } else {
-      // Default behavior for non-education connections
-      return people.map(person => {
-        const groupInfo = this.getPersonGroup(person, grouping);
-        
-        return {
-          id: person.id,
-          label: person.firstName || person.name.split(' ')[0],
-          fullName: person.name,
-          size: this.calculateNodeSize(person),
-          color: groupColors.get(groupInfo.key) || '#6B7280',
-          group: groupInfo.key,
-          groupLabel: groupInfo.label,
-          person: person, // Reference to full person object
-          onClick: (node) => this.handleNodeClick(node)
-        };
-      });
+  generateNodes(people, groupColors, connectionType, topN, connections) {
+    // Get top N items for the connection type
+    let topItems, getPersonItems;
+    
+    switch (connectionType) {
+      case ConnectionTypes.EDUCATION:
+        topItems = this.getTopSchools(people, topN);
+        getPersonItems = (person) => this.getPersonEducationSchools(person);
+        break;
+      case ConnectionTypes.COMPANY:
+        topItems = this.getTopCompanies(people, topN);
+        getPersonItems = (person) => this.getPersonCompanies(person);
+        break;
+      case ConnectionTypes.SKILLS:
+        topItems = this.getTopSkills(people, topN);
+        getPersonItems = (person) => this.getPersonSkills(person);
+        break;
+      case ConnectionTypes.LOCATION:
+        // For location, just use the person's city as a single item
+        topItems = this.getTopLocations(people, topN);
+        getPersonItems = (person) => [person.location?.city || 'Unknown'];
+        break;
+      default:
+        topItems = this.getTopSchools(people, topN);
+        getPersonItems = (person) => this.getPersonEducationSchools(person);
     }
+    
+    return people.map(person => {
+      const groupInfo = this.getPersonGroup(person, connectionType);
+      
+      // Get all items for this person that are in the top N
+      const personItems = getPersonItems(person);
+      const personTopItems = personItems.filter(item => 
+        topItems.some(topItem => topItem.key === item)
+      );
+      
+      // Create multi-color information
+      let nodeColor;
+      let multiColors = null;
+      
+      if (personTopItems.length === 0) {
+        // No top N items - use gray
+        nodeColor = NetworkDefaults.otherColor;
+      } else if (personTopItems.length === 1) {
+        // Single top N item - use its color
+        nodeColor = groupColors.get(personTopItems[0]) || NetworkDefaults.otherColor;
+      } else {
+        // Multiple top N items - create multi-colored node
+        multiColors = personTopItems.map(item => 
+          groupColors.get(item) || NetworkDefaults.otherColor
+        );
+        nodeColor = multiColors[0]; // Primary color for fallback
+      }
+      
+      return {
+        id: person.id,
+        label: person.firstName || person.name.split(' ')[0],
+        fullName: person.name,
+        size: this.calculateNodeSize(person, connections),
+        color: nodeColor,
+        multiColors: multiColors, // Array of colors for multi-colored rendering
+        group: groupInfo.key,
+        groupLabel: groupInfo.label,
+        person: person, // Reference to full person object
+        onClick: (node) => this.handleNodeClick(node)
+      };
+    });
   }
 
   /**
@@ -420,23 +424,88 @@ class NetworkGenerator {
   /**
    * Generate legend data for the current grouping
    */
-  generateLegendData(people, grouping, groupColors) {
+  generateLegendData(people, groupColors, connectionType) {
     const groups = new Map();
     
+    // Get the appropriate top items and person items function for this connection type
+    let topItems, getPersonItems;
+    
+    switch (connectionType) {
+      case ConnectionTypes.EDUCATION:
+        topItems = this.cachedTopSchools || [];
+        getPersonItems = (person) => this.getPersonEducationSchools(person);
+        break;
+      case ConnectionTypes.COMPANY:
+        topItems = this.cachedTopCompanies || [];
+        getPersonItems = (person) => this.getPersonCompanies(person);
+        break;
+      case ConnectionTypes.SKILLS:
+        topItems = this.cachedTopSkills || [];
+        getPersonItems = (person) => this.getPersonSkills(person);
+        break;
+      case ConnectionTypes.LOCATION:
+        topItems = this.cachedTopLocations || [];
+        getPersonItems = (person) => [person.location?.city || 'Unknown'];
+        break;
+      default:
+        topItems = [];
+        getPersonItems = () => [];
+    }
+    
     people.forEach(person => {
-      const groupInfo = this.getPersonGroup(person, grouping);
-      if (!groups.has(groupInfo.key)) {
-        groups.set(groupInfo.key, {
-          key: groupInfo.key,
-          label: groupInfo.label,
-          color: groupColors.get(groupInfo.key) || '#6B7280',
-          count: 1,
-          people: [person.id]
+      // Get all items for this person that are in the top N
+      const personItems = getPersonItems(person);
+      const personTopItems = personItems.filter(item => 
+        topItems.some(topItem => topItem.key === item)
+      );
+      
+      if (personTopItems.length > 0) {
+        // Count this person in all their top groups
+        personTopItems.forEach(item => {
+          // Get the proper label for this item
+          let label;
+          if (connectionType === ConnectionTypes.EDUCATION) {
+            label = this.getSchoolNameById(person, item) || item;
+          } else if (connectionType === ConnectionTypes.COMPANY) {
+            label = this.getCompanyNameById(person, item) || item;
+          } else {
+            label = item;
+          }
+          
+          if (!groups.has(item)) {
+            groups.set(item, {
+              key: item,
+              label: label,
+              color: groupColors.get(item) || NetworkDefaults.otherColor,
+              count: 1,
+              people: [person.id]
+            });
+          } else {
+            const existing = groups.get(item);
+            existing.count++;
+            if (!existing.people.includes(person.id)) {
+              existing.people.push(person.id);
+            }
+          }
         });
       } else {
-        const existing = groups.get(groupInfo.key);
-        existing.count++;
-        existing.people.push(person.id);
+        // Person has no top items - count them in "Others"
+        const groupInfo = this.getPersonGroup(person, connectionType);
+        if (!groups.has(groupInfo.key)) {
+          groups.set(groupInfo.key, {
+            key: groupInfo.key,
+            label: groupInfo.label,
+            color: groupColors.get(groupInfo.key) || NetworkDefaults.otherColor,
+            count: 1,
+            people: [person.id]
+          });
+        } else {
+          const existing = groups.get(groupInfo.key);
+          existing.count++;
+          if (!existing.people.includes(person.id)) {
+            existing.people.push(person.id);
+          }
+        }
       }
     });
 
@@ -448,8 +517,10 @@ class NetworkGenerator {
       return a.label.localeCompare(b.label);
     });
 
-    // Special handling for education grouping - group gray-colored schools together
-    if (grouping === NodeGroupings.EDUCATION) {
+    // Special handling for multi-colored connection types - group gray-colored items together
+    const useTopNColoring = true; // Now all connection types use top N coloring
+    
+    if (useTopNColoring) {
       console.log('Legend generation - all groups:', sortedGroups);
       
       const coloredGroups = [];
@@ -457,13 +528,13 @@ class NetworkGenerator {
       
       // Separate groups by color
       sortedGroups.forEach(group => {
-        console.log(`School: ${group.label}, Color: ${group.color}, Count: ${group.count}`);
-        if (group.color === '#9CA3AF') {
-          // This is a gray "other" school
+        console.log(`Group: ${group.label}, Color: ${group.color}, Count: ${group.count}`);
+        if (group.color === NetworkDefaults.otherColor) {
+          // This is a gray "other" group
           console.log(`  -> Adding to gray groups: ${group.label}`);
           grayGroups.push(group);
         } else {
-          // This is a top 12 school with distinct color
+          // This is a top N group with distinct color
           console.log(`  -> Adding to colored groups: ${group.label}`);
           coloredGroups.push(group);
         }
@@ -472,21 +543,40 @@ class NetworkGenerator {
       console.log(`Colored groups: ${coloredGroups.length}, Gray groups: ${grayGroups.length}`);
 
       if (grayGroups.length > 0) {
-        // Combine all gray schools into one "Other Schools" entry
+        // Combine all gray groups into one "Others" entry
         const otherCount = grayGroups.reduce((sum, group) => sum + group.count, 0);
-        const otherPeople = grayGroups.flatMap(group => group.people);
+        const otherPeople = [...new Set(grayGroups.flatMap(group => group.people))]; // Remove duplicates
+        
+        // Determine the appropriate label based on connection type
+        let otherLabel;
+        switch (connectionType) {
+          case ConnectionTypes.EDUCATION:
+            otherLabel = `Other Schools (${grayGroups.length})`;
+            break;
+          case ConnectionTypes.COMPANY:
+            otherLabel = `Other Companies (${grayGroups.length})`;
+            break;
+          case ConnectionTypes.SKILLS:
+            otherLabel = `Other Skills (${grayGroups.length})`;
+            break;
+          case ConnectionTypes.LOCATION:
+            otherLabel = `Other Locations (${grayGroups.length})`;
+            break;
+          default:
+            otherLabel = `Others (${grayGroups.length})`;
+        }
         
         const otherEntry = {
-          key: 'other_schools',
-          label: `Other Schools (${grayGroups.length})`,
-          color: '#9CA3AF',
-          count: otherCount,
+          key: 'others',
+          label: otherLabel,
+          color: NetworkDefaults.otherColor,
+          count: otherPeople.length, // Use unique people count
           people: otherPeople
         };
 
         console.log('Creating other entry:', otherEntry);
 
-        // Return colored schools + combined other entry, sorted by count
+        // Return colored groups + combined other entry, sorted by count
         const finalList = [...coloredGroups, otherEntry];
         return finalList.sort((a, b) => {
           if (b.count !== a.count) {
@@ -502,27 +592,69 @@ class NetworkGenerator {
       }
     }
 
-    // For all other groupings, return sorted groups
+    // Fallback - return sorted groups
     return sortedGroups;
   }
 
   /**
-   * Helper methods for node generation
+   * Calculate node size based on number of connections in the network
    */
-  calculateNodeSize(person) {
-    const baseSize = 8;
-    const experienceBonus = person.companies.length * 1.5;
-    const educationBonus = person.education.length * 1;
-    const skillsBonus = Math.min(person.skills.length * 0.3, 5);
+  calculateNodeSize(person, connections) {
+    const { baseSize, connectionMultiplier, minSize, maxSize } = NetworkDefaults.nodeSize;
     
-    return baseSize + experienceBonus + educationBonus + skillsBonus;
+    // Count actual connections for this person in the network
+    const connectionCount = connections.filter(conn => 
+      conn.source === person.id || conn.target === person.id
+    ).length;
+    
+    // Scale size based on connection count
+    // Use logarithmic scaling to avoid nodes becoming too large
+    const connectionBonus = connectionCount > 0 ? 
+      Math.log(connectionCount + 1) * connectionMultiplier : 0;
+    
+    const calculatedSize = baseSize + connectionBonus;
+    
+    // Clamp between min and max sizes
+    return Math.max(minSize, Math.min(maxSize, calculatedSize));
   }
 
   /**
-   * Get all education school names/IDs for a person - optimized version
+   * Get all education school IDs for a person - consistent ID usage
    */
   getPersonEducationSchools(person) {
-    return person.education?.map(edu => edu.schoolId || edu.school || 'unknown').filter(Boolean) || [];
+    return person.education?.map(edu => {
+      // Prefer school ID, but fallback to normalized school name if no ID
+      if (edu.schoolId) {
+        return edu.schoolId;
+      } else if (edu.school) {
+        // Use normalized school name as fallback ID
+        return `name_${edu.school.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+      } else {
+        return 'unknown';
+      }
+    }).filter(Boolean) || [];
+  }
+
+  /**
+   * Get all company names for a person (reverting to names for consistency)
+   */
+  getPersonCompanies(person) {
+    return person.companies?.map(company => company.name || 'unknown').filter(Boolean) || [];
+  }
+
+  /**
+   * Helper function to find the actual company name for a given company name (for consistency with education pattern)
+   */
+  getCompanyNameById(person, companyName) {
+    // Since we're using names as keys, just return the name
+    return companyName;
+  }
+
+  /**
+   * Get all skills for a person
+   */
+  getPersonSkills(person) {
+    return person.skills?.filter(Boolean) || [];
   }
 
   /**
@@ -546,23 +678,132 @@ class NetworkGenerator {
       .map(([school, count]) => ({ key: school, count }));
   }
 
-  getPersonGroup(person, grouping) {
-    switch (grouping) {
-      case NodeGroupings.CURRENT_COMPANY:
+  /**
+   * Get top N most frequent companies across all people
+   */
+  getTopCompanies(people, count = 12) {
+    const companyCounts = new Map();
+    
+    people.forEach(person => {
+      this.getPersonCompanies(person).forEach(company => {
+        if (company !== 'unknown') {
+          companyCounts.set(company, (companyCounts.get(company) || 0) + 1);
+        }
+      });
+    });
+    
+    return Array.from(companyCounts.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, count)
+      .map(([company, count]) => ({ key: company, count }));
+  }
+
+  /**
+   * Get top N most frequent skills across all people
+   */
+  getTopSkills(people, count = 12) {
+    const skillCounts = new Map();
+    
+    people.forEach(person => {
+      this.getPersonSkills(person).forEach(skill => {
+        if (skill && skill !== 'unknown') {
+          skillCounts.set(skill, (skillCounts.get(skill) || 0) + 1);
+        }
+      });
+    });
+    
+    return Array.from(skillCounts.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, count)
+      .map(([skill, count]) => ({ key: skill, count }));
+  }
+
+  /**
+   * Helper function to find the actual school name for a given school ID
+   */
+  getSchoolNameById(person, schoolId) {
+    // Handle normalized name-based IDs
+    if (schoolId.startsWith('name_')) {
+      // Extract the original school name from our normalized ID
+      const normalizedName = schoolId.replace('name_', '').replace(/_/g, ' ');
+      const education = person.education?.find(edu => 
+        edu.school && edu.school.toLowerCase().replace(/[^a-z0-9]/g, ' ').trim() === normalizedName
+      );
+      return education?.school || null;
+    }
+    
+    // Handle real school IDs
+    const education = person.education?.find(edu => 
+      (edu.schoolId === schoolId) || (edu.school === schoolId)
+    );
+    return education?.school || null;
+  }
+
+  /**
+   * Helper function to find the highest-ranking item from a person's items that appears in the top items list
+   */
+  getBestRankingItem(personItems, topItemsList) {
+    let bestItem = null;
+    let bestRank = Infinity;
+    
+    personItems.forEach(item => {
+      const rank = topItemsList.findIndex(topItem => topItem.key === item);
+      if (rank !== -1 && rank < bestRank) {
+        bestRank = rank;
+        bestItem = item;
+      }
+    });
+    
+    return bestItem;
+  }
+
+  getPersonGroup(person, connectionType) {
+    switch (connectionType) {
+      case ConnectionTypes.EDUCATION:
+        // For education, find the highest-ranked top school this person attended
+        const personSchools = this.getPersonEducationSchools(person);
+        const globalTopSchools = this.cachedTopSchools || [];
+        const bestSchoolId = this.getBestRankingItem(personSchools, globalTopSchools);
+        
+        // Fallback to most recent education if no top school found
+        if (bestSchoolId) {
+          // Find the actual school name for this ID
+          const schoolName = this.getSchoolNameById(person, bestSchoolId);
+          return {
+            key: bestSchoolId,
+            label: schoolName || bestSchoolId
+          };
+        } else {
+          const mostRecentEducation = this.getMostRecentEducation(person);
+          return {
+            key: mostRecentEducation.schoolId || 'Unknown',
+            label: mostRecentEducation.school || 'Unknown School'
+          };
+        }
+      case ConnectionTypes.COMPANY:
+        // For companies, find the highest-ranked top company this person has worked at
+        const personCompanies = this.getPersonCompanies(person);
+        const globalTopCompanies = this.cachedTopCompanies || [];
+        const bestCompanyName = this.getBestRankingItem(personCompanies, globalTopCompanies);
+        
         return {
-          key: person.currentCompany.name || 'Unknown',
-          label: person.currentCompany.name || 'Unknown Company'
+          key: bestCompanyName || 'Unknown',
+          label: bestCompanyName || 'Unknown Company'
         };
-      case NodeGroupings.LOCATION:
+      case ConnectionTypes.LOCATION:
         return {
           key: person.location?.city || 'Unknown',
           label: person.location?.full || 'Unknown Location'
         };
-      case NodeGroupings.EDUCATION:
-        const mostRecentEducation = this.getMostRecentEducation(person);
+      case ConnectionTypes.SKILLS:
+        // For skills, find the highest-ranked top skill this person has
+        const personSkills = this.getPersonSkills(person);
+        const globalTopSkills = this.cachedTopSkills || [];
+        const bestSkill = this.getBestRankingItem(personSkills, globalTopSkills);
+        
         return {
-          key: mostRecentEducation.schoolId || 'Unknown',
-          label: mostRecentEducation.school || 'Unknown School'
+          key: bestSkill || 'Unknown',
+          label: bestSkill || 'No Skills Listed'
         };
       default:
         return { key: 'default', label: 'Default' };
@@ -616,43 +857,76 @@ class NetworkGenerator {
     return months[monthStr.toLowerCase().substring(0, 3)] || 0;
   }
 
-  getGroupColors(people, grouping, connectionType) {
-    const groups = new Set(people.map(p => this.getPersonGroup(p, grouping).key));
-    const colors = GroupingConfig[grouping]?.colors || ['#6B7280'];
+  /**
+   * Get primary skill for a person (first skill or most relevant)
+   */
+  getPrimarySkill(person) {
+    if (!person.skills?.length) return null;
+    // For now, just return the first skill. Could be enhanced to find most relevant/common skill
+    return person.skills[0];
+  }
+
+  getGroupColors(people, connectionType, topN) {
+    const groups = new Set(people.map(p => this.getPersonGroup(p, connectionType).key));
+    // Use a unified color palette for all connection types
+    const colors = NetworkDefaults.colors;
     const colorMap = new Map();
     
-    // Special handling for education grouping - only top 12 get distinct colors
-    if (grouping === NodeGroupings.EDUCATION) {
-      // Count frequency of each education group
-      const groupCounts = new Map();
-      people.forEach(person => {
-        const groupInfo = this.getPersonGroup(person, grouping);
-        const count = groupCounts.get(groupInfo.key) || 0;
-        groupCounts.set(groupInfo.key, count + 1);
-      });
-
-      // Sort groups by count (highest to lowest)
-      const sortedGroups = Array.from(groupCounts.entries())
-        .sort(([,a], [,b]) => b - a);
-
-      // Assign distinct colors to top 12, same color to the rest
-      sortedGroups.forEach(([groupKey], index) => {
-        if (index < 12) {
-          // Top 12 get distinct colors
-          colorMap.set(groupKey, colors[index % colors.length]);
-        } else {
-          // All others get gray
-          colorMap.set(groupKey, '#9CA3AF'); // Light gray for "Others"
-        }
-      });
-    } else {
-      // Default behavior for other groupings
-      Array.from(groups).forEach((group, index) => {
-        colorMap.set(group, colors[index % colors.length]);
-      });
+    // Cache the top items for this connection type for consistent grouping
+    if (connectionType === ConnectionTypes.SKILLS) {
+      this.cachedTopSkills = this.getTopSkills(people, topN);
+    } else if (connectionType === ConnectionTypes.EDUCATION) {
+      this.cachedTopSchools = this.getTopSchools(people, topN);
+    } else if (connectionType === ConnectionTypes.COMPANY) {
+      this.cachedTopCompanies = this.getTopCompanies(people, topN);
+    } else if (connectionType === ConnectionTypes.LOCATION) {
+      this.cachedTopLocations = this.getTopLocations(people, topN);
     }
     
+    // Use top N coloring logic for all connection types
+    // Count frequency of each group
+    const groupCounts = new Map();
+    people.forEach(person => {
+      const groupInfo = this.getPersonGroup(person, connectionType);
+      const count = groupCounts.get(groupInfo.key) || 0;
+      groupCounts.set(groupInfo.key, count + 1);
+    });
+
+    // Sort groups by count (highest to lowest)
+    const sortedGroups = Array.from(groupCounts.entries())
+      .sort(([,a], [,b]) => b - a);
+
+    // Assign distinct colors to top N, same color to the rest
+    sortedGroups.forEach(([groupKey], index) => {
+      if (index < topN) {
+        // Top N get distinct colors
+        colorMap.set(groupKey, colors[index % colors.length]);
+      } else {
+        // All others get gray
+        colorMap.set(groupKey, NetworkDefaults.otherColor);
+      }
+    });
+    
     return colorMap;
+  }
+
+  /**
+   * Get top N most frequent locations across all people
+   */
+  getTopLocations(people, count = 12) {
+    const locationCounts = new Map();
+    
+    people.forEach(person => {
+      const location = person.location?.city || 'Unknown';
+      if (location !== 'Unknown') {
+        locationCounts.set(location, (locationCounts.get(location) || 0) + 1);
+      }
+    });
+    
+    return Array.from(locationCounts.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, count)
+      .map(([location, count]) => ({ key: location, count }));
   }
 }
 

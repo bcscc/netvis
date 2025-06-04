@@ -41,39 +41,6 @@ export const ConnectionConfig = {
 };
 
 /**
- * Node grouping strategies for visual clustering
- */
-export const NodeGroupings = {
-  CURRENT_COMPANY: 'current_company',
-  LOCATION: 'location',
-  EDUCATION: 'education',
-  NONE: 'none'
-};
-
-export const GroupingConfig = {
-  [NodeGroupings.CURRENT_COMPANY]: {
-    name: 'Current Company',
-    description: 'Group nodes by current employer',
-    colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899']
-  },
-  [NodeGroupings.LOCATION]: {
-    name: 'Location',
-    description: 'Group by geographic location',
-    colors: ['#DC2626', '#EA580C', '#D97706', '#65A30D', '#059669', '#0891B2']
-  },
-  [NodeGroupings.EDUCATION]: {
-    name: 'Education',
-    description: 'Group by education level',
-    colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#A855F7', '#14B8A6', '#F43F5E']
-  },
-  [NodeGroupings.NONE]: {
-    name: 'No Grouping',
-    description: 'Use default coloring',
-    colors: ['#6B7280']
-  }
-};
-
-/**
  * Layout strategies for different visualization approaches
  */
 export const LayoutStrategies = {

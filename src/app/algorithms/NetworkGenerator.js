@@ -43,11 +43,11 @@ class NetworkGenerator {
       selectedPeople : 
       this.filterConnectedPeople(selectedPeople, connections);
 
-    // Generate color mappings for grouping
-    const groupColors = this.getGroupColors(filteredPeople, nodeGrouping);
+    // Generate color mappings for grouping - pass connectionType for education-based multi-coloring
+    const groupColors = this.getGroupColors(filteredPeople, nodeGrouping, connectionType);
     
-    // Generate nodes
-    const nodes = this.generateNodes(filteredPeople, nodeGrouping, groupColors);
+    // Generate nodes - pass connectionType for education-based multi-coloring
+    const nodes = this.generateNodes(filteredPeople, nodeGrouping, groupColors, connectionType);
     
     // Generate links
     const links = this.generateLinks(connections, connectionType);
@@ -332,22 +332,70 @@ class NetworkGenerator {
   /**
    * Generate nodes for visualization
    */
-  generateNodes(people, grouping, groupColors) {
-    return people.map(person => {
-      const groupInfo = this.getPersonGroup(person, grouping);
+  generateNodes(people, grouping, groupColors, connectionType) {
+    // For education connections, we need to handle multi-colored nodes
+    if (connectionType === ConnectionTypes.EDUCATION) {
+      // Get top 12 schools once for all people
+      const top12Schools = this.getTopSchools(people, 12);
       
-      return {
-        id: person.id,
-        label: person.firstName || person.name.split(' ')[0],
-        fullName: person.name,
-        size: this.calculateNodeSize(person),
-        color: groupColors.get(groupInfo.key) || '#6B7280',
-        group: groupInfo.key,
-        groupLabel: groupInfo.label,
-        person: person, // Reference to full person object
-        onClick: (node) => this.handleNodeClick(node)
-      };
-    });
+      return people.map(person => {
+        const groupInfo = this.getPersonGroup(person, grouping);
+        
+        // Get all schools for this person that are in the top 12
+        const personSchools = this.getPersonEducationSchools(person);
+        const personTop12Schools = personSchools.filter(school => 
+          top12Schools.some(topSchool => topSchool.key === school)
+        );
+        
+        // Create multi-color information
+        let nodeColor;
+        let multiColors = null;
+        
+        if (personTop12Schools.length === 0) {
+          // No top 12 schools - use gray
+          nodeColor = '#9CA3AF';
+        } else if (personTop12Schools.length === 1) {
+          // Single top 12 school - use its color
+          nodeColor = groupColors.get(personTop12Schools[0]) || '#9CA3AF';
+        } else {
+          // Multiple top 12 schools - create multi-colored node
+          multiColors = personTop12Schools.map(school => 
+            groupColors.get(school) || '#9CA3AF'
+          );
+          nodeColor = multiColors[0]; // Primary color for fallback
+        }
+        
+        return {
+          id: person.id,
+          label: person.firstName || person.name.split(' ')[0],
+          fullName: person.name,
+          size: this.calculateNodeSize(person),
+          color: nodeColor,
+          multiColors: multiColors, // Array of colors for multi-colored rendering
+          group: groupInfo.key,
+          groupLabel: groupInfo.label,
+          person: person, // Reference to full person object
+          onClick: (node) => this.handleNodeClick(node)
+        };
+      });
+    } else {
+      // Default behavior for non-education connections
+      return people.map(person => {
+        const groupInfo = this.getPersonGroup(person, grouping);
+        
+        return {
+          id: person.id,
+          label: person.firstName || person.name.split(' ')[0],
+          fullName: person.name,
+          size: this.calculateNodeSize(person),
+          color: groupColors.get(groupInfo.key) || '#6B7280',
+          group: groupInfo.key,
+          groupLabel: groupInfo.label,
+          person: person, // Reference to full person object
+          onClick: (node) => this.handleNodeClick(node)
+        };
+      });
+    }
   }
 
   /**
@@ -415,7 +463,7 @@ class NetworkGenerator {
           console.log(`  -> Adding to gray groups: ${group.label}`);
           grayGroups.push(group);
         } else {
-          // This is a top 8 school with distinct color
+          // This is a top 12 school with distinct color
           console.log(`  -> Adding to colored groups: ${group.label}`);
           coloredGroups.push(group);
         }
@@ -470,6 +518,34 @@ class NetworkGenerator {
     return baseSize + experienceBonus + educationBonus + skillsBonus;
   }
 
+  /**
+   * Get all education school names/IDs for a person - optimized version
+   */
+  getPersonEducationSchools(person) {
+    return person.education?.map(edu => edu.schoolId || edu.school || 'unknown').filter(Boolean) || [];
+  }
+
+  /**
+   * Get top N most frequent schools across all people - consolidated helper
+   */
+  getTopSchools(people, count = 12) {
+    const schoolCounts = new Map();
+    
+    people.forEach(person => {
+      this.getPersonEducationSchools(person).forEach(school => {
+        if (school !== 'unknown') {
+          schoolCounts.set(school, (schoolCounts.get(school) || 0) + 1);
+        }
+      });
+    });
+    
+    // Sort by frequency and take top N
+    return Array.from(schoolCounts.entries())
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, count)
+      .map(([school, count]) => ({ key: school, count }));
+  }
+
   getPersonGroup(person, grouping) {
     switch (grouping) {
       case NodeGroupings.CURRENT_COMPANY:
@@ -484,7 +560,6 @@ class NetworkGenerator {
         };
       case NodeGroupings.EDUCATION:
         const mostRecentEducation = this.getMostRecentEducation(person);
-        console.log('Education grouping for', person.name, '- Key:', mostRecentEducation.schoolId, 'Label:', mostRecentEducation.school);
         return {
           key: mostRecentEducation.schoolId || 'Unknown',
           label: mostRecentEducation.school || 'Unknown School'
@@ -495,45 +570,33 @@ class NetworkGenerator {
   }
 
   /**
-   * Get most recent education entry for a person
+   * Get most recent education entry for a person - optimized version
    */
   getMostRecentEducation(person) {
-    if (!person.education || person.education.length === 0) {
+    if (!person.education?.length) {
       return { school: 'No Education Listed', schoolId: 'none' };
     }
 
-    // Debug logging
-    console.log('Education data for', person.name, ':', person.education);
-
-    // Sort education by end date (most recent first)
-    // If no end date, assume it's current/most recent
-    const sortedEducation = [...person.education].sort((a, b) => {
-      // If one has no end date (current), it's most recent
-      if (!a.endDate && b.endDate) return -1;
-      if (a.endDate && !b.endDate) return 1;
-      if (!a.endDate && !b.endDate) return 0;
-
-      // Handle different date formats
-      const aYear = a.endDate?.year || (typeof a.endDate === 'string' ? parseInt(a.endDate) : 0);
-      const bYear = b.endDate?.year || (typeof b.endDate === 'string' ? parseInt(b.endDate) : 0);
-
-      // Compare end dates
-      if (aYear !== bYear) {
-        return bYear - aYear; // Most recent first
+    // Find most recent education by end date (current education has no end date)
+    const mostRecent = person.education.reduce((latest, current) => {
+      // No end date means current/most recent
+      if (!current.endDate) return current;
+      if (!latest.endDate) return latest;
+      
+      // Compare years, then months if same year
+      const currentYear = current.endDate?.year || parseInt(current.endDate) || 0;
+      const latestYear = latest.endDate?.year || parseInt(latest.endDate) || 0;
+      
+      if (currentYear !== latestYear) {
+        return currentYear > latestYear ? current : latest;
       }
       
-      // If same year, compare months (if available)
-      if (a.endDate?.month && b.endDate?.month) {
-        const aMonth = this.monthNameToNumber(a.endDate.month) || 0;
-        const bMonth = this.monthNameToNumber(b.endDate.month) || 0;
-        return bMonth - aMonth;
-      }
-
-      return 0; // Equal
+      // Same year - compare months if available
+      const currentMonth = this.monthNameToNumber(current.endDate?.month) || 12;
+      const latestMonth = this.monthNameToNumber(latest.endDate?.month) || 12;
+      
+      return currentMonth > latestMonth ? current : latest;
     });
-
-    const mostRecent = sortedEducation[0];
-    console.log('Most recent education for', person.name, ':', mostRecent);
 
     return {
       school: mostRecent.school || 'Unknown School',
@@ -553,12 +616,12 @@ class NetworkGenerator {
     return months[monthStr.toLowerCase().substring(0, 3)] || 0;
   }
 
-  getGroupColors(people, grouping) {
+  getGroupColors(people, grouping, connectionType) {
     const groups = new Set(people.map(p => this.getPersonGroup(p, grouping).key));
     const colors = GroupingConfig[grouping]?.colors || ['#6B7280'];
     const colorMap = new Map();
     
-    // Special handling for education grouping - only top 8 get distinct colors
+    // Special handling for education grouping - only top 12 get distinct colors
     if (grouping === NodeGroupings.EDUCATION) {
       // Count frequency of each education group
       const groupCounts = new Map();
@@ -572,10 +635,10 @@ class NetworkGenerator {
       const sortedGroups = Array.from(groupCounts.entries())
         .sort(([,a], [,b]) => b - a);
 
-      // Assign distinct colors to top 8, same color to the rest
+      // Assign distinct colors to top 12, same color to the rest
       sortedGroups.forEach(([groupKey], index) => {
-        if (index < 8) {
-          // Top 8 get distinct colors
+        if (index < 12) {
+          // Top 12 get distinct colors
           colorMap.set(groupKey, colors[index % colors.length]);
         } else {
           // All others get gray

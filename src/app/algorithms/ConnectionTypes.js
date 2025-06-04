@@ -11,34 +11,30 @@ export const ConnectionTypes = {
 
 export const ConnectionConfig = {
   [ConnectionTypes.EDUCATION]: {
-    name: 'Educational Background',
+    name: 'Education',
     description: 'Connect people who attended the same schools',
     color: '#8B5CF6', // Purple
-    minStrength: 0.3,
     maxDistance: 120,
     icon: '🎓'
   },
   [ConnectionTypes.COMPANY]: {
-    name: 'Shared Companies',
+    name: 'Company',
     description: 'Connect people who worked at the same companies',
     color: '#10B981', // Green
-    minStrength: 0.4,
     maxDistance: 100,
     icon: '🏢'
   },
   [ConnectionTypes.LOCATION]: {
-    name: 'Geographic Location',
+    name: 'Location',
     description: 'Connect people from the same cities/regions',
     color: '#F59E0B', // Yellow
-    minStrength: 0.2,
     maxDistance: 150,
     icon: '📍'
   },
   [ConnectionTypes.SKILLS]: {
-    name: 'Technical Skills',
+    name: 'Skills',
     description: 'Connect people with similar skill sets',
     color: '#EF4444', // Red
-    minStrength: 0.5,
     maxDistance: 80,
     icon: '💼'
   },
@@ -68,7 +64,7 @@ export const GroupingConfig = {
   [NodeGroupings.EDUCATION]: {
     name: 'Education',
     description: 'Group by education level',
-    colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899']
+    colors: ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#A855F7', '#14B8A6', '#F43F5E']
   },
   [NodeGroupings.NONE]: {
     name: 'No Grouping',

@@ -141,14 +141,44 @@ const ForceDirectedGraph = ({
           .on('end', dragended)
       );
 
-    // Add circles to nodes
-    node
-      .append('circle')
-      .attr('r', d => d.size || 10)
-      .attr('fill', d => d.color || color(d.group || 1))
-      .attr('stroke', '#fff')
-      .attr('stroke-width', 2)
-      .style('cursor', 'pointer');
+    // Add circles to nodes - handle multi-colored nodes for education connections
+    node.each(function(d) {
+      const nodeGroup = d3.select(this);
+      const radius = d.size || 10;
+      
+      if (d.multiColors && d.multiColors.length > 1) {
+        // Multi-colored node - create pie chart segments
+        const angleStep = (2 * Math.PI) / d.multiColors.length;
+        
+        d.multiColors.forEach((color, index) => {
+          const startAngle = index * angleStep;
+          const endAngle = (index + 1) * angleStep;
+          
+          const arc = d3.arc()
+            .innerRadius(0)
+            .outerRadius(radius)
+            .startAngle(startAngle)
+            .endAngle(endAngle);
+          
+          nodeGroup
+            .append('path')
+            .attr('d', arc)
+            .attr('fill', color)
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .style('cursor', 'pointer');
+        });
+      } else {
+        // Single color node - create normal circle
+        nodeGroup
+          .append('circle')
+          .attr('r', radius)
+          .attr('fill', d.color || color(d.group || 1))
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 2)
+          .style('cursor', 'pointer');
+      }
+    });
 
     // Add labels to nodes
     node
@@ -164,14 +194,22 @@ const ForceDirectedGraph = ({
     // Add hover and click effects
     node
       .on('mouseover', function(event, d) {
-        d3.select(this).style('stroke-width', 3);
+        // Increase stroke width for all child elements (circles and paths)
+        d3.select(this).selectAll('circle, path').attr('stroke-width', 3);
       })
       .on('mouseout', function (event, d) {
+        // Reset stroke width and size for all child elements
         d3.select(this)
-          .select('circle')
+          .selectAll('circle')
           .transition()
           .duration(200)
           .attr('r', d.size || 10)
+          .attr('stroke-width', 2);
+          
+        d3.select(this)
+          .selectAll('path')
+          .transition()
+          .duration(200)
           .attr('stroke-width', 2);
       })
       .on('click', function (event, d) {
@@ -286,8 +324,8 @@ const ForceDirectedGraph = ({
     nodeData.forEach((d, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      d.x = (col * cellWidth) + (cellWidth / 2);
-      d.y = (row * cellHeight) + (cellHeight / 2);
+      d.x = padding + (col * cellWidth) + (cellWidth / 2);
+      d.y = padding + (row * cellHeight) + (cellHeight / 2);
     });
 
     // Add zoom and pan functionality

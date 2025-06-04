@@ -184,11 +184,15 @@ const ForceDirectedGraph = ({
     node
       .append('text')
       .text(d => d.label || d.id)
-      .attr('font-size', d => d.fontSize || '10px')
+      .attr('font-size', d => d.fontSize || '12px')
       .attr('font-family', 'Arial, sans-serif')
+      .attr('font-weight', 'bold')
       .attr('text-anchor', 'middle')
       .attr('dy', '.35em')
-      .attr('fill', d => d.textColor || '#333')
+      .attr('fill', d => d.textColor || '#000000')
+      .attr('stroke', '#ffffff')
+      .attr('stroke-width', '1px')
+      .attr('paint-order', 'stroke fill')
       .style('pointer-events', 'none');
 
     // Add hover and click effects

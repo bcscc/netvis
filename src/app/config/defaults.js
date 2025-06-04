@@ -43,23 +43,23 @@ export const NetworkDefaults = {
 
   // Physics presets
   physicsPresets: {
-    tight: {
-      chargeStrength: -80,
-      linkStrength: 0.6,
-      linkDistance: 50,
-      collisionRadius: 1,
-      velocityDecay: 0.9,
-      alphaDecay: 0.03,
-      centeringStrength: 0.1
-    },
     spread: {
-      chargeStrength: -200,
-      linkStrength: 0.2,
-      linkDistance: 120,
-      collisionRadius: 1.5,
-      velocityDecay: 0.85,
+      chargeStrength: -180,
+      linkStrength: 0.7,
+      linkDistance: 40,
+      collisionRadius: 1,
+      velocityDecay: 0.75,
+      alphaDecay: 0.03,
+      centeringStrength: 0.01
+    },
+    tight: {
+      chargeStrength: -50,
+      linkStrength: 0.5,
+      linkDistance: 90,
+      collisionRadius: 4,
+      velocityDecay: 0.9,
       alphaDecay: 0.02,
-      centeringStrength: 0.02
+      centeringStrength: 0.3
     },
     floaty: {
       chargeStrength: -100,
@@ -74,25 +74,25 @@ export const NetworkDefaults = {
 
   // Color palette for groups - 15 distinct, well-differentiated colors
   colors: [
-    '#EF4444', // Red
-    '#F97316', // Orange  
-    '#F59E0B', // Amber
-    '#EAB308', // Yellow
-    '#84CC16', // Lime
-    '#22C55E', // Green
-    '#10B981', // Emerald
-    '#14B8A6', // Teal
-    '#06B6D4', // Cyan
-    '#0EA5E9', // Sky
-    '#3B82F6', // Blue
-    '#6366F1', // Indigo
-    '#8B5CF6', // Violet
-    '#A855F7', // Purple
-    '#EC4899'  // Pink
+    '#800000', // Maroon
+    '#9A6324', // Brown  
+    '#469990', // Teal
+    '#000075', // Navy
+    '#e6194B', // Red
+    '#f58231', // Orange
+    '#ffe119', // Yellow
+    '#3cb44b', // Green
+    '#42d4f4', // Cyan
+    '#4363d8', // Blue
+    '#f032e6', // Magenta
+    '#fabed4', // Pink
+    '#fffac8', // Beige
+    '#aaffc3', // Mint
+    '#dcbeff'  // Lavender
   ],
 
   // Default gray color for "others" category
-  otherColor: '#9CA3AF',
+  otherColor: '#a9a9a9',
 
   // Node size configuration
   nodeSize: {

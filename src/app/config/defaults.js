@@ -6,10 +6,10 @@ import { ConnectionTypes } from '../algorithms/ConnectionTypes.js';
 export const NetworkDefaults = {
   // Network generation defaults
   network: {
-    connectionType: ConnectionTypes.EDUCATION,
+    connectionType: ConnectionTypes.COMPANY,
     maxNodes: 75,
     includeIsolated: false,
-    topN: 8
+    topN: 15
   },
 
   // Physics simulation defaults

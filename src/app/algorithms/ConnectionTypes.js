@@ -13,62 +13,21 @@ export const ConnectionConfig = {
   [ConnectionTypes.EDUCATION]: {
     name: 'Education',
     description: 'Connect people who attended the same schools',
-    color: '#8B5CF6', // Purple
-    maxDistance: 120,
     icon: '🎓'
   },
   [ConnectionTypes.COMPANY]: {
     name: 'Company',
     description: 'Connect people who worked at the same companies',
-    color: '#10B981', // Green
-    maxDistance: 100,
     icon: '🏢'
   },
   [ConnectionTypes.LOCATION]: {
     name: 'Location',
     description: 'Connect people from the same cities/regions',
-    color: '#F59E0B', // Yellow
-    maxDistance: 150,
     icon: '📍'
   },
   [ConnectionTypes.SKILLS]: {
     name: 'Skills',
     description: 'Connect people with similar skill sets',
-    color: '#EF4444', // Red
-    maxDistance: 80,
     icon: '💼'
   },
 };
-
-/**
- * Layout strategies for different visualization approaches
- */
-export const LayoutStrategies = {
-  FORCE_DIRECTED: 'force_directed',
-  CIRCULAR: 'circular',
-  CLUSTERED: 'clustered'
-};
-
-export const LayoutConfig = {
-  [LayoutStrategies.FORCE_DIRECTED]: {
-    name: 'Force-Directed',
-    description: 'Natural clustering based on connections',
-    forceStrength: -300,
-    linkDistance: 100,
-    centerForce: 0.1
-  },
-  [LayoutStrategies.CIRCULAR]: {
-    name: 'Circular',
-    description: 'Arrange nodes in circular patterns',
-    forceStrength: -200,
-    linkDistance: 80,
-    centerForce: 0.2
-  },
-  [LayoutStrategies.CLUSTERED]: {
-    name: 'Clustered',
-    description: 'Group similar nodes together',
-    forceStrength: -400,
-    linkDistance: 60,
-    centerForce: 0.3
-  }
-}; 

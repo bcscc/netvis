@@ -95,8 +95,11 @@ class DataProcessor {
     const skills = new Set();
     
     this.people.forEach(person => {
-      person.getCompanyNames().forEach(company => companies.add(company));
-      person.getSchoolNames().forEach(school => schools.add(school));
+      // Access company names directly from the companies array
+      person.companies.forEach(comp => companies.add(comp.normalizedName));
+      // Access school names directly from the education array
+      person.education.forEach(edu => schools.add(edu.normalizedSchool));
+      // Skills are already an array
       person.skills.forEach(skill => skills.add(skill));
     });
     
@@ -216,7 +219,8 @@ class DataProcessor {
     
     this.people.forEach(person => {
       if (person.location && person.location.full) {
-        const key = person.getLocationKey();
+        // Create location key directly instead of calling removed method
+        const key = `${person.location.city || ''}_${person.location.country || ''}`.toLowerCase();
         if (!locations.has(key)) {
           locations.set(key, {
             full: person.location.full,
@@ -286,32 +290,24 @@ class DataProcessor {
   }
 
   /**
-   * Export processed data for saving/caching
+   * Export processed data in various formats
    */
   exportProcessedData() {
     return {
       people: this.people.map(person => ({
-        // Export essential data, can be reconstructed into Person objects
         id: person.id,
         name: person.name,
         firstName: person.firstName,
         lastName: person.lastName,
         headline: person.headline,
-        profileUrl: person.profileUrl,
-        profilePicture: person.profilePicture,
-        about: person.about,
-        location: person.location,
-        currentCompany: person.currentCompany,
-        companies: person.companies,
-        education: person.education,
+        currentCompany: person.currentCompany.name,
+        location: person.location?.full,
+        companies: person.companies.map(comp => comp.name),
+        schools: person.education.map(edu => edu.school),
         skills: person.skills,
         careerPath: person.careerPath
       })),
-      stats: this.stats,
-      metadata: {
-        processedAt: new Date().toISOString(),
-        version: '1.0.0'
-      }
+      stats: this.stats
     };
   }
 
@@ -319,11 +315,15 @@ class DataProcessor {
    * Get processing statistics
    */
   getStats() {
+    // Regenerate stats if not already done
+    if (this.stats.totalPeople === 0 && this.people.length > 0) {
+      this.generateStats();
+    }
     return this.stats;
   }
 
   /**
-   * Get sample data for testing
+   * Get a sample of processed data for testing
    */
   getSampleData(size = 10) {
     return this.people.slice(0, size);

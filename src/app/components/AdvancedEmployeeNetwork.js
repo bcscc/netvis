@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import ForceDirectedGraph from './ForceDirectedGraph';
 import GraphControls from './GraphControls';
 import NetworkGenerator from '../algorithms/NetworkGenerator';
-import { ConnectionTypes } from '../algorithms/ConnectionTypes';
 import NetworkDefaults from '../config/defaults';
 
 // Custom overlay component for node details
@@ -22,13 +22,50 @@ const NodeDetailsOverlay = ({ node, onClose }) => {
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-lg">
           <div className="flex justify-between items-start">
-            <div>
-              <h2 className="text-2xl font-bold">{person?.name || node.label}</h2>
-              <p className="text-blue-100 mt-1">{person?.headline || 'No headline available'}</p>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold">{person?.name || node.label}</h2>
+                  <p className="text-blue-100 mt-1">{person?.headline || 'No headline available'}</p>
+                </div>
+                {/* LinkedIn Icon */}
+                {person?.profileUrl && (
+                  <a
+                    href={person.profileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto p-2 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-all duration-200 group"
+                    title="View LinkedIn Profile"
+                  >
+                    <div className="w-6 h-6 group-hover:scale-110 transition-transform">
+                      <Image 
+                        src="/linkedin.svg"
+                        alt="LinkedIn"
+                        width={24}
+                        height={24}
+                        className=""
+                        onError={(e) => {
+                          // Fallback to inline SVG if image fails to load
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      {/* Fallback inline SVG */}
+                      <svg 
+                        className="w-6 h-6 text-blue-600 hidden"
+                        fill="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                      </svg>
+                    </div>
+                  </a>
+                )}
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
+              className="text-white hover:text-gray-200 transition-colors ml-4"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -194,7 +231,8 @@ const AdvancedEmployeeNetwork = ({ people: propPeople = [] }) => {
   // Default settings
   const [settings, setSettings] = useState({
     ...NetworkDefaults.network,
-    ...NetworkDefaults.ui
+    ...NetworkDefaults.ui,
+    physicsParams: NetworkDefaults.physics
   });
 
   // Load employee data on component mount

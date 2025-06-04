@@ -10,9 +10,7 @@ const GraphControls = ({
   isLoading = false,
   metadata = null 
 }) => {
-  const [localThreshold, setLocalThreshold] = useState(settings.threshold || NetworkDefaults.network.threshold);
   const [localMaxNodes, setLocalMaxNodes] = useState(settings.maxNodes || NetworkDefaults.network.maxNodes);
-  const [showPhysicsControls, setShowPhysicsControls] = useState(false);
 
   // Physics parameters with defaults
   const [physicsParams, setPhysicsParams] = useState({
@@ -21,7 +19,6 @@ const GraphControls = ({
   });
 
   useEffect(() => {
-    setLocalThreshold(settings.threshold || NetworkDefaults.network.threshold);
     setLocalMaxNodes(settings.maxNodes || NetworkDefaults.network.maxNodes);
     if (settings.physicsParams) {
       setPhysicsParams(prev => ({ ...prev, ...settings.physicsParams }));
@@ -39,26 +36,12 @@ const GraphControls = ({
     handleChange('physicsParams', newParams);
   };
 
-  // Debounced handlers for numeric inputs
-  const handleThresholdChange = (value) => {
-    setLocalThreshold(value);
-  };
-
+  // Debounced handler for numeric input
   const handleMaxNodesChange = (value) => {
     setLocalMaxNodes(value);
   };
 
   // Apply changes when user finishes editing
-  const applyThresholdChange = () => {
-    const value = parseFloat(localThreshold);
-    const { min, max } = NetworkDefaults.ranges.threshold;
-    if (!isNaN(value) && value >= min && value <= max) {
-      handleChange('threshold', value);
-    } else {
-      setLocalThreshold(NetworkDefaults.network.threshold);
-    }
-  };
-
   const applyMaxNodesChange = () => {
     const value = parseInt(localMaxNodes);
     const { min, max } = NetworkDefaults.ranges.maxNodes;
@@ -107,59 +90,40 @@ const GraphControls = ({
           </div>
         </div>
 
-        {/* Node Grouping & Settings */}
+        {/* Node Settings */}
         <div className="space-y-1">
-          {/* Threshold, Max Nodes, and Top Groups in compact grid */}
-            <div className="space-y-1">
-                <label className="text-xs text-gray-600">Strength</label>
-                <input
-                type="range"
-                min={NetworkDefaults.ranges.threshold.min}
-                max={NetworkDefaults.ranges.threshold.max}
-                step={NetworkDefaults.ranges.threshold.step}
-                value={localThreshold}
-                onChange={(e) => handleThresholdChange(e.target.value)}
-                onMouseUp={() => applyThresholdChange()}
-                onTouchEnd={() => applyThresholdChange()}
-                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                disabled={isLoading}
-                />
-                <div className="text-xs text-gray-500 text-center">{localThreshold}</div>
-            </div>
-            
-            <div className="space-y-1">
-                <label className="text-xs text-gray-600">Max Nodes</label>
-                <input
-                type="range"
-                min={NetworkDefaults.ranges.maxNodes.min}
-                max={NetworkDefaults.ranges.maxNodes.max}
-                step={NetworkDefaults.ranges.maxNodes.step}
-                value={localMaxNodes}
-                onChange={(e) => handleMaxNodesChange(e.target.value)}
-                onMouseUp={() => applyMaxNodesChange()}
-                onTouchEnd={() => applyMaxNodesChange()}
-                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                disabled={isLoading}
-                />
-                <div className="text-xs text-gray-500 text-center">{localMaxNodes}</div>
-            </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-600">Max Nodes</label>
+            <input
+              type="range"
+              min={NetworkDefaults.ranges.maxNodes.min}
+              max={NetworkDefaults.ranges.maxNodes.max}
+              step={NetworkDefaults.ranges.maxNodes.step}
+              value={localMaxNodes}
+              onChange={(e) => handleMaxNodesChange(e.target.value)}
+              onMouseUp={() => applyMaxNodesChange()}
+              onTouchEnd={() => applyMaxNodesChange()}
+              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              disabled={isLoading}
+            />
+            <div className="text-xs text-gray-500 text-center">{localMaxNodes}</div>
+          </div>
 
-            <div className="space-y-1">
-                <label className="text-xs text-gray-600">Top Groups</label>
-                <input
-                type="range"
-                min={NetworkDefaults.ranges.topN.min}
-                max={NetworkDefaults.ranges.topN.max}
-                step={NetworkDefaults.ranges.topN.step}
-                value={settings.topN || NetworkDefaults.network.topN}
-                onChange={(e) => handleChange('topN', parseInt(e.target.value))}
-                className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                disabled={isLoading}
-                title="Number of top groups to show with distinct colors"
-                />
-                <div className="text-xs text-gray-500 text-center">{settings.topN || NetworkDefaults.network.topN}</div>
-            </div>
-          
+          <div className="space-y-1">
+            <label className="text-xs text-gray-600">Top Groups</label>
+            <input
+              type="range"
+              min={NetworkDefaults.ranges.topN.min}
+              max={NetworkDefaults.ranges.topN.max}
+              step={NetworkDefaults.ranges.topN.step}
+              value={settings.topN || NetworkDefaults.network.topN}
+              onChange={(e) => handleChange('topN', parseInt(e.target.value))}
+              className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              disabled={isLoading}
+              title="Number of top groups to show with distinct colors"
+            />
+            <div className="text-xs text-gray-500 text-center">{settings.topN || NetworkDefaults.network.topN}</div>
+          </div>
         </div>
 
         {/* Display Options */}

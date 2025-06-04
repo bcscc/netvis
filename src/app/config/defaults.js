@@ -7,21 +7,20 @@ export const NetworkDefaults = {
   // Network generation defaults
   network: {
     connectionType: ConnectionTypes.EDUCATION,
-    threshold: 0.1,
     maxNodes: 75,
     includeIsolated: false,
-    topN: 12
+    topN: 8
   },
 
   // Physics simulation defaults
   physics: {
-    chargeStrength: -80,
-    linkStrength: 0.6,
-    linkDistance: 50,
+    chargeStrength: -180,
+    linkStrength: 0.7,
+    linkDistance: 40,
     collisionRadius: 1,
-    velocityDecay: 0.9,
+    velocityDecay: 0.75,
     alphaDecay: 0.03,
-    centeringStrength: 0.1
+    centeringStrength: 0.01
   },
 
   // UI control defaults
@@ -32,7 +31,6 @@ export const NetworkDefaults = {
 
   // Range limits for controls
   ranges: {
-    threshold: { min: 0.1, max: 1.0, step: 0.1 },
     maxNodes: { min: 10, max: 100, step: 10 },
     topN: { min: 6, max: 15, step: 1 },
     physics: {
